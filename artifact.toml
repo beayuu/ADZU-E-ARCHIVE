@@ -1,32 +1,28 @@
-kind = "api"
-previewPath = "/api" # TODO - should be excluded from preview in the first place
-title = "API Server"
+kind = "web"
+previewPath = "/"
+title = "AdZU Registrar E-Archive"
+description = "A desktop-first, offline-friendly document archiving workspace for Ateneo de Zamboanga University Registrar staff to scan, label, organize, search, and retrieve student records locally."
 version = "1.0.0"
-id = "3B4_FFSkEVBkAeYMFRJ2e"
+id = "artifacts/adzu-registrar-archive"
+router = "path"
 
 [[services]]
-localPort = 8080
-name = "API Server"
-paths = ["/api"]
+name = "web"
+paths = [ "/" ]
+localPort = 18924
 
 [services.development]
-run = "pnpm --filter @workspace/api-server run dev"
+run = "pnpm --filter @workspace/adzu-registrar-archive run dev"
 
 [services.production]
+build = [ "pnpm", "--filter", "@workspace/adzu-registrar-archive", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/adzu-registrar-archive/dist/public"
 
-[services.production.build]
-args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
 
-[services.production.build.env]
-NODE_ENV = "production"
-
-[services.production.run]
-# we don't run through pnpm to make startup faster in production
-args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
-
-[services.production.run.env]
-PORT = "8080"
-NODE_ENV = "production"
-
-[services.production.health.startup]
-path = "/api/healthz"
+[services.env]
+PORT = "18924"
+BASE_PATH = "/"

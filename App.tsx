@@ -15,7 +15,7 @@ import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
 
-type ArchiveDocument = { id: string; studentName: string; type: string; fileName: string; kind: string; status: string; thumbnail?: string; rotation?: number; crop?: 'auto' | 'manual' };
+type ArchiveDocument = { id: string; studentName: string; type: string; fileName: string; kind: string; status: string; thumbnail?: string; rotation?: number; crop?: 'auto' | 'manual'; lastName?: string; firstName?: string; middleName?: string; schoolId?: string };
 type StudentFolder = { name: string; schoolId: string; documentCount: number; lastUpdated: string; status: string };
 type Activity = { id: string; timestamp: string; action: string; subject: string; status: string };
 
@@ -153,7 +153,7 @@ function EmptyState({ icon, title, description, action }: { icon: ReactNode; tit
   return <div className="flex flex-col items-center justify-center px-6 py-16 text-center"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary">{icon}</div><h3 className="serif mt-4 text-xl font-semibold">{title}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>{action && <div className="mt-5">{action}</div>}</div>;
 }
 
-function ScanPage({ onActivity }: { onActivity: (action: string, subject: string, status?: string) => void }) {
+function StudentBatchScan({ onActivity }: { onActivity: (action: string, subject: string, status?: string) => void }) {
   const [step, setStep] = useState(0);
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -235,13 +235,177 @@ function ScanPage({ onActivity }: { onActivity: (action: string, subject: string
   const cropDoc = (id: string, mode: 'auto' | 'manual') => { setManualCrop(mode === 'manual'); setDocs(prev => prev.map(doc => doc.id === id ? { ...doc, crop: mode } : doc)); };
   const complete = () => { onActivity('Archived batch', `${folderName} · ${docs.length} documents`); setStep(4); };
   const steps = ['Identify student', 'Add documents', 'Label documents', 'Review batch', 'Complete'];
-  return <div className="mx-auto max-w-[1160px] animate-enter"><SectionTitle eyebrow="Archive operations" title="Scan documents" description="Capture, label, review, and archive a student document batch." />
+  return <>
     <div className="mb-7 flex items-center gap-1 overflow-x-auto pb-2">{steps.map((item, i) => <div key={item} className="flex min-w-max items-center gap-2"><div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${step >= i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{step > i ? <Check size={14} /> : i + 1}</div><span className={`text-xs font-semibold ${step >= i ? 'text-foreground' : 'text-muted-foreground'}`}>{item}</span>{i < steps.length - 1 && <div className="mx-2 h-px w-8 bg-border md:w-14" />}</div>)}</div>
     {step === 0 && <div className="rounded-lg border border-border bg-card p-6"><div className="mb-5 flex items-center gap-2"><FolderClosed size={18} className="text-primary" /><h2 className="serif text-xl font-semibold">Student information</h2></div><p className="mb-6 text-sm text-muted-foreground">Enter the information used to identify and name the local archive folder.</p><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold">LAST NAME *<input value={lastName} onChange={setName(setLastName)} data-testid="input-last-name" placeholder="[LAST NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label><label className="text-sm font-semibold">FIRST NAME *<input value={firstName} onChange={setName(setFirstName)} data-testid="input-first-name" placeholder="[FIRST NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label><label className="text-sm font-semibold">MIDDLE NAME<input value={middleName} onChange={setName(setMiddleName)} data-testid="input-middle-name" placeholder="[MIDDLE NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label><label className="text-sm font-semibold">STUDENT ID *<input value={schoolId} onChange={e => setSchoolId(e.target.value.toUpperCase())} data-testid="input-school-id" placeholder="[STUDENT ID]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label></div><div className="mt-6 rounded-md border border-primary/20 bg-secondary/40 p-4"><div className="mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Folder name preview</div><div className="mt-2 font-semibold">{folderName}</div></div><Button className="mt-7" disabled={!lastName.trim() || !firstName.trim() || !schoolId.trim()} data-testid="button-begin-batch" onClick={() => setStep(1)}>Begin batch <ArrowRight size={16} /></Button></div>}
     {step === 1 && <div className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]"><div className="rounded-lg border border-border bg-card p-6"><div className="flex items-start justify-between"><div><h2 className="serif text-xl font-semibold">Scanned documents</h2><p className="mt-1 text-sm text-muted-foreground">{folderName} · {schoolId}</p></div><Badge tone="blue">{docs.length} documents</Badge></div><div className="mt-5 flex gap-2 overflow-x-auto border-b border-border pb-2">{docs.map((doc, index) => <button key={doc.id} type="button" onClick={() => setSelectedDoc(doc.id)} onMouseEnter={() => setHoveredDoc(doc.id)} onMouseLeave={() => setHoveredDoc(null)} className={`relative min-w-[122px] rounded-t-md border px-3 py-2 text-left text-xs font-semibold ${selected?.id === doc.id ? 'border-primary bg-secondary text-primary' : 'border-transparent text-muted-foreground hover:border-border hover:bg-secondary/50'}`}><span className="block truncate">{doc.type || `DOCUMENT ${index + 1}`}</span><span className="mt-1 block truncate text-[10px] font-normal">{doc.fileName}</span>{hoveredDoc === doc.id && <span className="absolute bottom-full left-0 z-20 mb-2 w-48 rounded-md border border-border bg-card p-2 shadow-lg">{doc.thumbnail ? <img src={doc.thumbnail} alt="" className="h-32 w-full rounded object-contain bg-muted" /> : <span className="flex h-32 items-center justify-center text-muted-foreground"><FileText size={24} /></span>}</span>}</button>)}<button type="button" onClick={openCamera} className="flex h-12 min-w-[54px] items-center justify-center rounded-md border border-dashed border-primary/40 text-primary hover:bg-secondary" aria-label="Add scan"><Plus size={18} /></button></div><label data-testid="dropzone-upload" className="scan-dash mt-5 flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-secondary/30 p-6 text-center hover:border-primary/60 hover:bg-secondary"><Upload className="text-primary" size={25} /><span className="mt-2 text-sm font-bold">Add scanned documents</span><span className="mt-1 text-xs text-muted-foreground">PDF, JPG, JPEG, PNG · files stay on this device</span><input data-testid="input-upload-documents" type="file" accept=".pdf,.jpg,.jpeg,.png,image/*" multiple className="hidden" onChange={addFiles} /></label><div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" data-testid="button-camera-permission" onClick={openCamera}><Camera size={16} /> Scan document</Button><Button variant="quiet" data-testid="button-to-label" onClick={() => setStep(2)}>Continue to labeling <ArrowRight size={15} /></Button></div>{cameraError && <div role="alert" className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{cameraError}</div>}{camera && <div className="mt-5 overflow-hidden rounded-md border border-primary/20 bg-slate-950"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-3"><span className="text-xs font-semibold text-white">Camera source</span><select value={selectedCamera} onChange={changeCamera} className="max-w-[220px] rounded border border-white/20 bg-slate-900 px-2 py-1 text-xs text-white"><option value="">Select camera</option>{cameraDevices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}</select></div><div className="relative"><video ref={videoRef} autoPlay playsInline className="aspect-video w-full object-cover" /><div className="pointer-events-none absolute inset-0 flex items-center justify-center"><div className="flex aspect-[4/3] w-[72%] items-center justify-center rounded border-2 border-dashed border-accent/80 text-xs font-bold uppercase tracking-wider text-accent">Place document here</div></div></div><div className="flex items-center justify-between p-3"><span className="flex items-center gap-2 text-xs text-white"><span className="h-2 w-2 rounded-full bg-emerald-400" />Live camera feed</span><Button variant="gold" data-testid="button-capture-photo" onClick={capturePhoto}><Camera size={15} /> Capture</Button></div></div>}</div><div className="rounded-lg border border-border bg-card p-6"><div className="mono text-[10px] uppercase tracking-[.16em] text-muted-foreground">Current batch</div><div className="mt-4 rounded-md bg-secondary p-4"><div className="mono text-xs font-bold text-primary">{schoolId || '[STUDENT ID]'}</div><div className="mt-2 text-sm font-semibold">{folderName}</div><div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><WifiOff size={14} /> Local capture enabled</div></div>{selected && <div className="mt-5 overflow-hidden rounded-md border border-border bg-muted p-3"><div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Selected document</div>{selected.thumbnail ? <img src={selected.thumbnail} alt="" style={{ transform: `rotate(${selected.rotation ?? 0}deg)` }} className={`h-40 w-full rounded object-contain ${selected.crop ? 'bg-card' : ''}`} /> : <div className="flex h-40 items-center justify-center text-muted-foreground"><FileText size={32} /></div>}<div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" data-testid="button-auto-crop" onClick={() => cropDoc(selected.id, 'auto')}>Auto crop</Button><Button variant="outline" data-testid="button-manual-crop" onClick={() => cropDoc(selected.id, 'manual')}>Manual crop</Button><Button variant="outline" data-testid="button-rotate-document" onClick={() => rotateDoc(selected.id)}>Rotate</Button></div>{manualCrop && <p className="mt-2 text-[11px] text-muted-foreground">Manual crop mode enabled. Adjustments will be available in the desktop capture editor.</p>}<Button variant="quiet" className="mt-2 w-full" data-testid="button-delete-document" onClick={() => deleteDoc(selected.id)}>Delete document</Button></div>}<Button className="mt-6 w-full" disabled={!docs.length} data-testid="button-to-label" onClick={() => setStep(2)}>Next: label documents <ArrowRight size={15} /></Button></div></div>}
     {step === 2 && <div className="rounded-lg border border-border bg-card p-6"><div className="mb-5"><h2 className="serif text-xl font-semibold">Label documents</h2><p className="mt-1 text-sm text-muted-foreground">Assign a document type to each scanned file. Each label is independent.</p></div>{docs.length ? <div className="overflow-x-auto"><div className="min-w-[650px] divide-y divide-border rounded-md border border-border"><div className="grid grid-cols-[1.2fr_160px_1fr] gap-4 bg-secondary/50 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><span>Document</span><span>Preview</span><span>Label</span></div>{docs.map((doc, i) => <div key={doc.id} data-testid={`row-batch-document-${doc.id}`} className="grid grid-cols-[1.2fr_160px_1fr] items-center gap-4 px-4 py-4"><div><div className="truncate text-sm font-semibold">{doc.fileName}</div><div className="mono mt-1 text-[10px] text-muted-foreground">DOCUMENT {i + 1} · {doc.kind}</div></div><div className="h-16 w-24 overflow-hidden rounded border border-border bg-muted">{doc.thumbnail ? <img src={doc.thumbnail} alt="" style={{ transform: `rotate(${doc.rotation ?? 0}deg)` }} className="h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center text-muted-foreground"><FileText size={20} /></div>}</div><div className="flex items-center gap-3"><select value={doc.type} onChange={event => updateLabel(doc.id, event.target.value)} data-testid={`select-document-type-${doc.id}`} className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-xs font-semibold uppercase"><option value="">[SELECT DOCUMENT TYPE]</option>{documentTypes.map(type => <option key={type}>{type}</option>)}</select><Badge tone={doc.status === 'Labeled' ? 'green' : 'amber'}>{doc.status}</Badge></div></div>)}</div></div> : <EmptyState icon={<FilePlus2 size={22} />} title="No documents found." description="Add a scanned or uploaded document before labeling." action={<Button variant="outline" data-testid="button-back-upload" onClick={() => setStep(1)}><ArrowLeft size={15} /> Back to capture</Button>} />}<div className="mt-6 flex justify-between border-t border-border pt-5"><Button variant="quiet" data-testid="button-back-step" onClick={() => setStep(1)}><ArrowLeft size={15} /> Back</Button><Button disabled={!docs.length || docs.some(doc => !doc.type)} data-testid="button-to-review" onClick={() => setStep(3)}>Review batch <ArrowRight size={15} /></Button></div></div>}
     {step === 3 && <div className="grid gap-6 lg:grid-cols-[1fr_300px]"><div className="rounded-lg border border-border bg-card p-6"><div className="flex items-start justify-between"><div><h2 className="serif text-xl font-semibold">Review before archiving</h2><p className="mt-1 text-sm text-muted-foreground">Verify the folder name and every document label.</p></div><Badge tone="green"><Check size={12} /> Ready</Badge></div><div className="mt-6 rounded-md border border-border p-4"><div className="flex justify-between text-xs text-muted-foreground"><span>Folder</span><span className="font-semibold text-foreground">{folderName}</span></div><div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Student ID</span><span className="mono font-semibold text-foreground">{schoolId}</span></div><div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>Documents</span><span className="font-semibold text-foreground">{docs.length} files</span></div></div><div className="mt-5 divide-y divide-border">{docs.map((doc, i) => <div key={doc.id} className="flex items-center gap-3 py-3"><FileCheck2 size={17} className="text-emerald-600" /><span className="flex-1 truncate text-sm">{doc.fileName || `DOCUMENT ${i + 1}`}</span><span className="text-xs font-semibold uppercase text-muted-foreground">{doc.type}</span></div>)}</div><div className="mt-6 flex justify-between border-t border-border pt-5"><Button variant="quiet" data-testid="button-back-labels" onClick={() => setStep(2)}><ArrowLeft size={15} /> Edit labels</Button><Button variant="gold" data-testid="button-archive-batch" onClick={complete}><Archive size={16} /> Create folder & save</Button></div></div><div className="rounded-lg border border-border bg-primary p-6 text-primary-foreground"><ShieldCheck className="text-accent" size={22} /><h3 className="serif mt-4 text-lg font-semibold">Final verification</h3><p className="mt-2 text-xs leading-relaxed text-primary-foreground/70">The folder will be created using the generated uppercase name and the labeled files will be saved to the configured archive location.</p></div></div>}
      {step === 4 && <div className="mx-auto max-w-xl rounded-lg border border-border bg-card p-8 text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><CheckCircle2 size={31} /></div><div className="mono mt-6 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">Archive successfully created</div><h2 className="serif mt-2 text-3xl font-semibold">Archive saved locally</h2><p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground"><strong className="text-foreground">{studentName || '[Student Name]'}</strong> · {docs.length} documents indexed and ready to retrieve.</p><div className="mt-7 flex justify-center gap-3"><Button variant="outline" data-testid="button-new-batch" onClick={() => { setStep(0); setDocs([]); setLastName(''); setFirstName(''); setMiddleName(''); setSchoolId(''); }}>Start another batch</Button><Link href="/folders" data-testid="link-completed-folders" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">View folders <ArrowRight size={15} /></Link></div></div>}
+  </>;
+}
+
+type GeneralDoc = ArchiveDocument & { lastName: string; firstName: string; middleName: string; schoolId: string };
+
+function GeneralBatchScan({ onActivity }: { onActivity: (action: string, subject: string, status?: string) => void }) {
+  const [step, setStep] = useState(0);
+  const [docs, setDocs] = useState<GeneralDoc[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [camera, setCamera] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState('');
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const makeDoc = (fileName: string, kind: string, thumbnail?: string): GeneralDoc => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    studentName: '', type: '', fileName, kind, status: 'Needs details', thumbnail,
+    lastName: '', firstName: '', middleName: '', schoolId: '',
+  });
+
+  const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    files.forEach(file => {
+      const add = (thumbnail?: string) => setDocs(prev => [...prev, makeDoc(file.name, file.type.includes('image') ? 'IMAGE' : 'PDF', thumbnail)]);
+      if (file.type.includes('image')) {
+        const reader = new FileReader();
+        reader.onload = () => add(typeof reader.result === 'string' ? reader.result : undefined);
+        reader.readAsDataURL(file);
+      } else add();
+    });
+    event.target.value = '';
+  };
+
+  const attachStream = (stream: MediaStream | null) => { if (videoRef.current && stream) videoRef.current.srcObject = stream; };
+  useEffect(() => { attachStream(cameraStream); }, [cameraStream]);
+  const startCamera = async (deviceId?: string) => {
+    setCameraError('');
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is not available in this browser.');
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({ video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' }, audio: false });
+      streamRef.current = stream;
+      setCameraStream(stream);
+      setCamera(true);
+      const devices = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'videoinput');
+      setCameraDevices(devices);
+      setSelectedCamera(deviceId ?? devices[0]?.deviceId ?? '');
+    } catch {
+      setCameraError('Unable to access camera. Please verify that the camera is connected and not being used by another application.');
+    }
+  };
+  const openCamera = () => startCamera(selectedCamera || undefined);
+  const changeCamera = (event: ChangeEvent<HTMLSelectElement>) => { setSelectedCamera(event.target.value); startCamera(event.target.value); };
+  useEffect(() => () => streamRef.current?.getTracks().forEach(track => track.stop()), []);
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    setDocs(prev => [...prev, makeDoc(`CAMERA-CAPTURE-${prev.length + 1}.jpg`, 'IMAGE', canvas.toDataURL('image/jpeg', 0.92))]);
+  };
+
+  const removeDoc = (id: string) => setDocs(prev => prev.filter(doc => doc.id !== id));
+
+  const updateActiveDoc = (patch: Partial<GeneralDoc>) => setDocs(prev => prev.map((doc, i) => {
+    if (i !== activeIndex) return doc;
+    const next = { ...doc, ...patch };
+    const studentName = [next.lastName.trim(), [next.firstName.trim(), next.middleName.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ').toUpperCase();
+    return { ...next, studentName, status: next.lastName.trim() && next.firstName.trim() && next.schoolId.trim() && next.type ? 'Labeled' : 'Needs details' };
+  }));
+
+  const current = docs[activeIndex];
+  const currentValid = !!(current?.lastName.trim() && current?.firstName.trim() && current?.schoolId.trim() && current?.type);
+  const allValid = docs.length > 0 && docs.every(doc => doc.lastName.trim() && doc.firstName.trim() && doc.schoolId.trim() && doc.type);
+  const distinctStudents = new Set(docs.map(doc => doc.schoolId.trim().toUpperCase())).size;
+
+  const goToDetails = () => { setActiveIndex(0); setStep(1); };
+  const nextDoc = () => { if (activeIndex < docs.length - 1) setActiveIndex(activeIndex + 1); else setStep(2); };
+  const prevDoc = () => { if (activeIndex > 0) setActiveIndex(activeIndex - 1); else setStep(0); };
+
+  const complete = () => {
+    onActivity('Archived general batch', `${docs.length} documents · ${distinctStudents} student${distinctStudents === 1 ? '' : 's'}`);
+    setStep(3);
+  };
+
+  const reset = () => { setStep(0); setDocs([]); setActiveIndex(0); };
+
+  const steps = ['Scan documents', 'Document details', 'Review & save', 'Complete'];
+
+  return <>
+    <div className="mb-7 flex items-center gap-1 overflow-x-auto pb-2">{steps.map((item, i) => <div key={item} className="flex min-w-max items-center gap-2"><div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${step >= i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{step > i ? <Check size={14} /> : i + 1}</div><span className={`text-xs font-semibold ${step >= i ? 'text-foreground' : 'text-muted-foreground'}`}>{item}</span>{i < steps.length - 1 && <div className="mx-2 h-px w-8 bg-border md:w-14" />}</div>)}</div>
+
+    {step === 0 && <div className="rounded-lg border border-border bg-card p-6">
+      <div className="flex items-start justify-between"><div><h2 className="serif text-xl font-semibold">Scan documents</h2><p className="mt-1 text-sm text-muted-foreground">Scan or upload documents first. You'll assign the owner and type for each one next, in the order they were scanned.</p></div><Badge tone="blue">{docs.length} documents</Badge></div>
+      <label data-testid="dropzone-upload-general" className="scan-dash mt-5 flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-secondary/30 p-6 text-center hover:border-primary/60 hover:bg-secondary"><Upload className="text-primary" size={25} /><span className="mt-2 text-sm font-bold">Add scanned documents</span><span className="mt-1 text-xs text-muted-foreground">PDF, JPG, JPEG, PNG · files stay on this device</span><input data-testid="input-upload-documents-general" type="file" accept=".pdf,.jpg,.jpeg,.png,image/*" multiple className="hidden" onChange={addFiles} /></label>
+      <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" data-testid="button-camera-permission-general" onClick={openCamera}><Camera size={16} /> Scan document</Button></div>
+      {cameraError && <div role="alert" className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{cameraError}</div>}
+      {camera && <div className="mt-5 overflow-hidden rounded-md border border-primary/20 bg-slate-950"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-3"><span className="text-xs font-semibold text-white">Camera source</span><select value={selectedCamera} onChange={changeCamera} className="max-w-[220px] rounded border border-white/20 bg-slate-900 px-2 py-1 text-xs text-white"><option value="">Select camera</option>{cameraDevices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}</select></div><div className="relative"><video ref={videoRef} autoPlay playsInline className="aspect-video w-full object-cover" /><div className="pointer-events-none absolute inset-0 flex items-center justify-center"><div className="flex aspect-[4/3] w-[72%] items-center justify-center rounded border-2 border-dashed border-accent/80 text-xs font-bold uppercase tracking-wider text-accent">Place document here</div></div></div><div className="flex items-center justify-between p-3"><span className="flex items-center gap-2 text-xs text-white"><span className="h-2 w-2 rounded-full bg-emerald-400" />Live camera feed</span><Button variant="gold" data-testid="button-capture-photo-general" onClick={capturePhoto}><Camera size={15} /> Capture</Button></div></div>}
+      {docs.length > 0 && <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">{docs.map((doc, i) => <div key={doc.id} data-testid={`card-scanned-doc-${doc.id}`} className="group relative overflow-hidden rounded-md border border-border bg-muted"><div className="flex h-20 items-center justify-center">{doc.thumbnail ? <img src={doc.thumbnail} alt="" className="h-full w-full object-contain" /> : <FileText size={22} className="text-muted-foreground" />}</div><div className="truncate border-t border-border bg-card px-2 py-1 text-[10px] font-semibold">DOC {i + 1}</div><button type="button" aria-label="Remove document" data-testid={`button-remove-doc-${doc.id}`} onClick={() => removeDoc(doc.id)} className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-slate-900/80 text-white group-hover:flex"><X size={12} /></button></div>)}</div>}
+      <Button className="mt-6 w-full" disabled={!docs.length} data-testid="button-to-details" onClick={goToDetails}>Next: enter document details <ArrowRight size={15} /></Button>
+    </div>}
+
+    {step === 1 && current && <div className="grid gap-6 lg:grid-cols-[1fr_.8fr]">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="flex items-center justify-between"><h2 className="serif text-xl font-semibold">Document details</h2><Badge tone="blue">Document {activeIndex + 1} of {docs.length}</Badge></div>
+        <p className="mt-1 text-sm text-muted-foreground">Enter the owner and type for this document, in the order it was scanned.</p>
+        <div className="mt-5 h-48 overflow-hidden rounded-md border border-border bg-muted">{current.thumbnail ? <img src={current.thumbnail} alt="" className="h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center text-muted-foreground"><FileText size={28} /></div>}</div>
+        <div className="mt-2 truncate text-xs font-semibold text-muted-foreground">{current.fileName}</div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="text-sm font-semibold">LAST NAME *<input value={current.lastName} onChange={e => updateActiveDoc({ lastName: e.target.value.toUpperCase() })} data-testid="input-doc-last-name" placeholder="[LAST NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label>
+          <label className="text-sm font-semibold">FIRST NAME *<input value={current.firstName} onChange={e => updateActiveDoc({ firstName: e.target.value.toUpperCase() })} data-testid="input-doc-first-name" placeholder="[FIRST NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label>
+          <label className="text-sm font-semibold">MIDDLE NAME<input value={current.middleName} onChange={e => updateActiveDoc({ middleName: e.target.value.toUpperCase() })} data-testid="input-doc-middle-name" placeholder="[MIDDLE NAME]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label>
+          <label className="text-sm font-semibold">STUDENT ID *<input value={current.schoolId} onChange={e => updateActiveDoc({ schoolId: e.target.value.toUpperCase() })} data-testid="input-doc-school-id" placeholder="[STUDENT ID]" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-normal uppercase outline-none focus:border-primary" /></label>
+        </div>
+        <label className="mt-4 block text-sm font-semibold">DOCUMENT TYPE *<select value={current.type} onChange={e => updateActiveDoc({ type: e.target.value })} data-testid="select-doc-type" className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm font-semibold uppercase outline-none focus:border-primary"><option value="">[SELECT DOCUMENT TYPE]</option>{documentTypes.map(type => <option key={type}>{type}</option>)}</select></label>
+        <div className="mt-6 flex justify-between border-t border-border pt-5">
+          <Button variant="quiet" data-testid="button-prev-doc" onClick={prevDoc}><ArrowLeft size={15} /> {activeIndex === 0 ? 'Back to scanning' : 'Previous document'}</Button>
+          <Button disabled={!currentValid} data-testid="button-next-doc" onClick={nextDoc}>{activeIndex < docs.length - 1 ? 'Next document' : 'Review batch'} <ArrowRight size={15} /></Button>
+        </div>
+      </div>
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="mono text-[10px] uppercase tracking-[.16em] text-muted-foreground">Batch progress</div>
+        <div className="mt-4 space-y-2">{docs.map((doc, i) => <button type="button" key={doc.id} onClick={() => setActiveIndex(i)} data-testid={`button-jump-doc-${doc.id}`} className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-xs ${i === activeIndex ? 'border-primary bg-secondary' : 'border-border hover:bg-secondary/50'}`}><span className="font-semibold">DOC {i + 1} · {doc.fileName}</span><Badge tone={doc.status === 'Labeled' ? 'green' : 'amber'}>{doc.status}</Badge></button>)}</div>
+      </div>
+    </div>}
+
+    {step === 2 && <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="flex items-start justify-between"><div><h2 className="serif text-xl font-semibold">Review before saving</h2><p className="mt-1 text-sm text-muted-foreground">Verify every document's owner and type.</p></div><Badge tone={allValid ? 'green' : 'amber'}>{allValid ? <><Check size={12} /> Ready</> : 'Incomplete'}</Badge></div>
+        <div className="mt-5 divide-y divide-border">{docs.map((doc, i) => <div key={doc.id} data-testid={`row-review-doc-${doc.id}`} className="flex items-center gap-3 py-3"><FileCheck2 size={17} className={doc.status === 'Labeled' ? 'text-emerald-600' : 'text-amber-500'} /><span className="flex-1 truncate text-sm">DOC {i + 1} · {doc.fileName}</span><span className="text-xs text-muted-foreground">{doc.studentName || '[No owner]'}</span><span className="text-xs font-semibold uppercase text-muted-foreground">{doc.type || '[No type]'}</span></div>)}</div>
+        <div className="mt-6 flex justify-between border-t border-border pt-5"><Button variant="quiet" data-testid="button-back-details" onClick={() => { setActiveIndex(0); setStep(1); }}><ArrowLeft size={15} /> Edit details</Button><Button variant="gold" disabled={!allValid} data-testid="button-save-general-batch" onClick={complete}><Archive size={16} /> Save documents</Button></div>
+      </div>
+      <div className="rounded-lg border border-border bg-primary p-6 text-primary-foreground">
+        <ShieldCheck className="text-accent" size={22} />
+        <h3 className="serif mt-4 text-lg font-semibold">Batch summary</h3>
+        <div className="mt-4 space-y-2 text-xs text-primary-foreground/80"><div className="flex justify-between"><span>Documents</span><span className="font-semibold text-white">{docs.length}</span></div><div className="flex justify-between"><span>Students</span><span className="font-semibold text-white">{distinctStudents}</span></div></div>
+        <p className="mt-4 text-xs leading-relaxed text-primary-foreground/70">Each document will be filed under the student it was labeled for, independent of the others.</p>
+      </div>
+    </div>}
+
+    {step === 3 && <div className="mx-auto max-w-xl rounded-lg border border-border bg-card p-8 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><CheckCircle2 size={31} /></div>
+      <div className="mono mt-6 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">General batch saved</div>
+      <h2 className="serif mt-2 text-3xl font-semibold">Documents archived</h2>
+      <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground"><strong className="text-foreground">{docs.length} documents</strong> filed across <strong className="text-foreground">{distinctStudents} student{distinctStudents === 1 ? '' : 's'}</strong>.</p>
+      <div className="mt-7 flex justify-center gap-3"><Button variant="outline" data-testid="button-new-general-batch" onClick={reset}>Start another batch</Button><Link href="/documents" data-testid="link-completed-documents" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">View documents <ArrowRight size={15} /></Link></div>
+    </div>}
+  </>;
+}
+
+function ScanPage({ onActivity }: { onActivity: (action: string, subject: string, status?: string) => void }) {
+  const [mode, setMode] = useState<'student' | 'general'>('student');
+  return <div className="mx-auto max-w-[1160px] animate-enter">
+    <SectionTitle eyebrow="Archive operations" title="Scan documents" description="Capture, label, review, and archive documents. Choose a scan mode below." />
+    <div className="mb-6 flex gap-2 rounded-md border border-border bg-card p-1">
+      <button type="button" data-testid="button-scan-mode-student" onClick={() => setMode('student')} className={`flex-1 rounded px-4 py-2.5 text-left text-sm transition-colors ${mode === 'student' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}><span className="block font-semibold">Batch scan · one student</span><span className={`block text-[11px] ${mode === 'student' ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}>Enter a student once, then scan and label all of their documents.</span></button>
+      <button type="button" data-testid="button-scan-mode-general" onClick={() => setMode('general')} className={`flex-1 rounded px-4 py-2.5 text-left text-sm transition-colors ${mode === 'general' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}><span className="block font-semibold">General batch scan</span><span className={`block text-[11px] ${mode === 'general' ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}>Scan first, then enter owner and type per document, one by one.</span></button>
+    </div>
+    {mode === 'student' ? <StudentBatchScan onActivity={onActivity} /> : <GeneralBatchScan onActivity={onActivity} />}
   </div>;
 }
 

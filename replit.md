@@ -1,15 +1,17 @@
-# [Project name]
+# AdZU Registrar E-Archive
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An offline-ready registrar workspace for scanning, labeling, reviewing, and organizing student archive documents.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/adzu-registrar-archive run dev` — run the registrar archive web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env for the API server: `DATABASE_URL` — Postgres connection string
+- The registrar archive frontend currently runs as a local/offline workspace and does not require the API server to render.
 
 ## Stack
 
